@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>FabricDeFi Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        h1 { color: #333; text-align: center; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .card h2 { margin-top: 0; }
+        input, select, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background-color: #0056b3; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #004494; }
+        .flex { display: flex; gap: 10px; }
+        .flex > * { flex: 1; }
+        ul { list-style: none; padding: 0; }
+        li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FabricDeFi Dashboard</h1>
+        
+        <div class="card flex">
+            <div><h3>BankA_User 餘額: <span id="bal-BankA_User">0</span> FBT</h3></div>
+            <div><h3>BankB_User 餘額: <span id="bal-BankB_User">0</span> FBT</h3></div>
+            <div><h3>Regulator 餘額: <span id="bal-Regulator">0</span> FBT</h3></div>
+            <button onclick="fetchBalances()" style="width: auto;">重新整理餘額</button>
+        </div>
+
+        <div class="card">
+            <h2>P2P 轉帳</h2>
+            <div class="flex">
+                <select id="transfer-from">
+                    <option value="BankA_User">BankA_User</option>
+                    <option value="BankB_User">BankB_User</option>
+                    <option value="Regulator">Regulator</option>
+                </select>
+                <select id="transfer-to">
+                    <option value="BankB_User">BankB_User</option>
+                    <option value="BankA_User">BankA_User</option>
+                    <option value="Regulator">Regulator</option>
+                </select>
+                <input type="number" id="transfer-amount" placeholder="金額">
+            </div>
+            <button onclick="doTransfer()">執行轉帳</button>
+        </div>
+
+        <div class="card">
+            <h2>跨機構清算</h2>
+            <div class="flex">
+                <select id="settle-from">
+                    <option value="BankA_User">BankA_User</option>
+                    <option value="BankB_User">BankB_User</option>
+                </select>
+                <select id="settle-to">
+                    <option value="BankB_User">BankB_User</option>
+                    <option value="BankA_User">BankA_User</option>
+                </select>
+                <input type="number" id="settle-amount" placeholder="金額">
+            </div>
+            <button onclick="requestSettlement()">發起清算請求</button>
+            <br><br>
+            <input type="text" id="settle-id" placeholder="輸入清算 ID 進行審核">
+            <button onclick="approveSettlement()">監管機構審核通過</button>
+        </div>
+
+        <div class="card">
+            <h2>交易歷史查詢</h2>
+            <select id="history-account">
+                <option value="BankA_User">BankA_User</option>
+                <option value="BankB_User">BankB_User</option>
+                <option value="Regulator">Regulator</option>
+            </select>
+            <button onclick="fetchHistory()">查詢歷史</button>
+            <ul id="history-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        async function fetchBalances() {
+            for (let acc of ['BankA_User', 'BankB_User', 'Regulator']) {
+                try {
+                    let res = await fetch(`${API_URL}/balance/${acc}`);
+                    let data = await res.json();
+                    document.getElementById(`bal-${acc}`).innerText = data.balance || 0;
+                } catch(e) {
+                    console.error('Fetch balance error', e);
+                }
+            }
+        }
+
+        async function doTransfer() {
+            let from = document.getElementById('transfer-from').value;
+            let to = document.getElementById('transfer-to').value;
+            let amount = document.getElementById('transfer-amount').value;
+            try {
+                let res = await fetch(`${API_URL}/transfer`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({from, to, amount})
+                });
+                let data = await res.json();
+                alert(data.message || data.error || 'Transfer successful');
+                fetchBalances();
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function requestSettlement() {
+            let from = document.getElementById('settle-from').value;
+            let to = document.getElementById('settle-to').value;
+            let amount = document.getElementById('settle-amount').value;
+            try {
+                let res = await fetch(`${API_URL}/settlement/request`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({from, to, amount})
+                });
+                let data = await res.json();
+                alert('Settlement Requested, ID: ' + data.id);
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function approveSettlement() {
+            let id = document.getElementById('settle-id').value;
+            try {
+                let res = await fetch(`${API_URL}/settlement/approve/${id}`, {
+                    method: 'POST'
+                });
+                let data = await res.json();
+                alert(data.message || data.error || 'Approval successful');
+                fetchBalances();
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function fetchHistory() {
+            let acc = document.getElementById('history-account').value;
+            try {
+                let res = await fetch(`${API_URL}/history/${acc}`);
+                let data = await res.json();
+                let list = document.getElementById('history-list');
+                list.innerHTML = '';
+                if(data.error) {
+                    list.innerHTML = `<li>Error: ${data.error}</li>`;
+                    return;
+                }
+                data.forEach(tx => {
+                    list.innerHTML += `<li>TxID: ${tx.txId} | ${tx.from} -> ${tx.to} | Amount: ${tx.amount} FBT | Time: ${new Date(tx.timestamp).toLocaleString()}</li>`;
+                });
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Init
+        fetchBalances();
+    </script>
+</body>
+</html>
