@@ -14,9 +14,9 @@
 ## 啟動網路
 由於 WSL2 的 Docker socket 轉發限制，若在 `deployCC` 階段遇到 `broken pipe`，建議使用原生的 Linux 環境或 Docker Desktop WSL 整合模式。
 
-1. 進入 test-network 目錄
+1. 從 repo 根目錄進入 test-network 目錄
 ```bash
-cd ~/fabric-workspace/fabric-samples/test-network
+cd fabric-samples/test-network
 ```
 
 2. 啟動網路與建立通道
@@ -41,7 +41,7 @@ cd ~/fabric-workspace/fabric-samples/test-network
 
 1. 安裝依賴
 ```bash
-cd ~/fabric-workspace/Hyperledger_test/fabricdefi/api
+cd Hyperledger_test/fabricdefi/api   # 從 repo 根目錄
 npm install
 ```
 
@@ -54,7 +54,7 @@ API 將運行於 `http://localhost:3000`。
 ## 前端操作介面
 前端為單一 HTML 檔案，使用原生 JS 與 API 互動。
 
-1. 打開 `frontend/index.html` (可在瀏覽器直接開啟檔案 `file:///C:/Users/sanketsu/fabric-workspace/Hyperledger_test/fabricdefi/frontend/index.html`)
+1. 用瀏覽器直接開啟 `frontend/index.html`
 2. 介面提供以下功能：
    - 即時餘額查詢 (BankA_User, BankB_User, Regulator)
    - P2P 轉帳操作
